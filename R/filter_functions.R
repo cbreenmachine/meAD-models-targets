@@ -26,6 +26,7 @@ read_and_pivot_routine <- function(idir, chr, samples){
     .read_bed_wrapper <- function(sample){
         .read_bed(idir, chr, sample)
     }
+    
     data <- do.call(rbind, lapply(X = samples, FUN = .read_bed_wrapper))
 
     m <- pivot_me(data, "methylated")
@@ -144,4 +145,25 @@ compute_coverage_stats <- function(m_cov){
     maxes <- apply(X, FUN=max, MARGIN=1)
     meds <- apply(X, FUN=median, MARGIN=1)
 }
+
+
+compute_pcs <- function(m_cov, top_p = 0.05){
+
+    P <- t(m_cov[['M']] / m_cov[['Cov']])
+    P.vars <- apply(P, 2, stats::var)
+
+    # Get a numeric cut from the percentile
+    cut <- quantile(P.vars, 1 - top_p)
+
+    # Subet methylation matrix  
+    P.top <- P[ ,(P.vars >= cut)]
+    pca.out <- gmodels::fast.prcomp(P.top, scale. = T, center = T)
+    
+    PC.df <- as.data.frame(pca.out$x) 
+    PC.df$sample_id <- rownames(PC.df)
+}
+
+# construct_bsseq <- function(m_cov){
+
+# }
 #END
